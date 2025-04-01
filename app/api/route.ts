@@ -9,7 +9,16 @@ type Inputs = {
   batteryDOD: [number, number];
 };
 
-type ReportOutputs = {
+export type ReportOutputs = {
+  // Also output the values input by user
+  numEV: number;
+  dailyMileage: number;
+  batteryCapacity: number;
+  chargePower: number;
+  efficiency: number;
+  batteryDOD: [number, number];
+
+  // Computed values
   dailyEnergyConsumptionPerEV: number;
   chargeTimePerEV: number;
   totalFleetEnergyDemand: number;
@@ -41,8 +50,8 @@ export async function POST(req: Request) {
 
   // Charging Time per Vehicle (hours)
   const chargeTimePerEV = calculateChargeTime(
-    batteryDOD[0],
-    batteryDOD[1],
+    batteryDOD[0] / 100, // Convert % to decimal
+    batteryDOD[1] / 100,
     batteryCapacity,
     chargePower,
   );
@@ -83,6 +92,12 @@ export async function POST(req: Request) {
 
   const reportId = Math.random().toString(36).substr(2, 9);
   reports[reportId] = {
+    numEV,
+    dailyMileage,
+    batteryCapacity,
+    chargePower,
+    efficiency,
+    batteryDOD,
     dailyEnergyConsumptionPerEV,
     chargeTimePerEV,
     totalFleetEnergyDemand,
@@ -94,7 +109,6 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: NextRequest) {
-  console.log("Report Object: ", reports);
   const { searchParams } = new URL(req.url);
   const reportId = searchParams.get("id");
 
@@ -117,8 +131,8 @@ export async function GET(req: NextRequest) {
  * 1. Charging is 90% efficient
  * 2. Charging time from 80% to 99% is as long as 0 to 80%.
  *
- * @param SOC_start - Starting SOC before charging
- * @param SOC_end - SOC reached at the end of charge
+ * @param SOC_start - Starting SOC before charging in decimals [-]
+ * @param SOC_end - SOC reached at the end of charge in decimals [-]
  * @param capacity - Total battery capacity [kWh]
  * @param chargePower - Rate of charge [kW]
  * @param chargeEfficiency - (Optional) Charge Efficiency [-]. Default to 0.9
@@ -135,8 +149,8 @@ function calculateChargeTime(
   let time = 0;
 
   // Calculate charge time for phase 1
-  if (SOC_start < 80) {
-    time += ((80 - SOC_start) * capacity) / (chargeEfficiency * chargePower);
+  if (SOC_start < 0.8) {
+    time += ((0.8 - SOC_start) * capacity) / (chargeEfficiency * chargePower);
   }
 
   // Calculate time constant `tau` such that the charge time from 80% to 99%
@@ -145,8 +159,8 @@ function calculateChargeTime(
   const tau = t_p1 / Math.log(2);
 
   // Calculate charge time for phase 2 (modelled as logarithmic function of SOC)
-  if (SOC_end > 80) {
-    time += tau * Math.log((100 - 80) / (100 - SOC_end));
+  if (SOC_end > 0.8) {
+    time += tau * Math.log((1 - 0.8) / (1 - SOC_end));
   }
 
   return time;
