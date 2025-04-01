@@ -2,7 +2,14 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+First, create a file in the project root `.env.local` with the following
+content to provide the base URL:
+
+```env
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+```
+
+Next, run the development server:
 
 ```bash
 npm run dev

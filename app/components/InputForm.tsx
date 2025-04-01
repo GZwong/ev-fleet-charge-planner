@@ -108,7 +108,7 @@ function InputForm() {
 
       const data = await response.json();
       const reportId = data.reportId;
-      console.log("Report ID: ", reportId);
+      console.log("New report created with ID: ", reportId);
 
       // Obtain the report
       router.push(`/report/${reportId}`); // Redirect to the report page
@@ -231,7 +231,7 @@ function InputForm() {
             step={1}
             defaultValue={batteryDOD}
             value={batteryDOD}
-            onInput={(event) => {
+            onInput={(event: [number, number]) => {
               setBatteryDOD([event[0], event[1]]);
             }}
           />

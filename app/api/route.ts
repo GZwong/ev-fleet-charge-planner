@@ -94,6 +94,7 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: NextRequest) {
+  console.log("Report Object: ", reports);
   const { searchParams } = new URL(req.url);
   const reportId = searchParams.get("id");
 

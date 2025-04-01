@@ -1,11 +1,14 @@
 import { notFound } from "next/navigation";
 
 async function getReportData(reportId: string) {
-  const apiUrl = `/api/routes?id=${encodeURIComponent(reportId)}`;
+  const apiUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api?id=${encodeURIComponent(reportId)}`;
 
   const res = await fetch(apiUrl);
 
-  if (!res.ok) return null;
+  if (!res.ok) {
+    console.log("Error when getting report data. Error code: ", res.status);
+    return null;
+  }
 
   return res.json();
 }
@@ -26,7 +29,6 @@ export default async function ReportPage({
   const report = await getReportData(id);
 
   if (!report) {
-    console.log("Report not found!");
     return notFound(); // Return a "not found" page if no report is found
   }
 
