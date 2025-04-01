@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ReactRangeSliderInput from "react-range-slider-input";
 import "react-range-slider-input/dist/style.css";
+import { ReportOutputs } from "../api/route";
+import Dashboard from "./Dashboard";
 
 // Configuration for input values
 const inputConfig = {
@@ -58,6 +60,11 @@ function InputForm() {
   const [efficiency, setEfficiency] = useState<number>(3);
   const [batteryDOD, setBatteryDOD] = useState<[number, number]>([10, 90]);
 
+  // State denoting loading status of computation
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [result, setResult] = useState<ReportOutputs>();
+  const [resultLoaded, setResultLoaded] = useState<boolean>(false);
+
   // State denoting whether all values are valid
   const [validInput, setValidInput] = useState<boolean>(false);
 
@@ -65,7 +72,7 @@ function InputForm() {
   const [useCustomEfficiency, setUseCustomEfficiency] =
     useState<boolean>(false);
 
-  const router = useRouter();
+  // const router = useRouter();
 
   // Constantly checks input for validity
   useEffect(() => {
@@ -86,7 +93,7 @@ function InputForm() {
   // Submit user inputs to calculation API
   async function handleSubmit(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
-    console.log("Button clicked!");
+    setIsLoading(true);
 
     try {
       const response = await fetch("/api", {
@@ -106,150 +113,152 @@ function InputForm() {
         throw new Error("Failed to fetch calculation results.");
       }
 
-      const data = await response.json();
-      const reportId = data.reportId;
-      console.log("New report created with ID: ", reportId);
-
-      // Obtain the report
-      router.push(`/report/${reportId}`); // Redirect to the report page
+      const data: ReportOutputs = await response.json();
+      setResult(data);
+      setResultLoaded(true);
     } catch (error) {
       console.log("Error has been catched");
+    } finally {
+      setIsLoading(false);
     }
   }
 
   return (
-    <form>
-      <div className="mb-5 grid grid-cols-1 gap-x-10 gap-y-5 md:grid-cols-2 lg:grid-cols-3">
-        <IntegerInputWiithValidation
-          label={inputConfig.numEV.label}
-          state={numEV}
-          setState={setNumEV}
-          minVal={inputConfig.numEV.minVal}
-          maxVal={inputConfig.numEV.maxVal}
-        />
-        <NumericInputWithValidation
-          label={inputConfig.mileage.label}
-          state={dailyMileage}
-          setState={setDailyMileage}
-          minVal={inputConfig.mileage.minVal}
-          maxVal={inputConfig.mileage.maxVal}
-        />
-        <NumericInputWithValidation
-          label={inputConfig.capacity.label}
-          state={batteryCapacity}
-          setState={setBatteryCapacity}
-          minVal={inputConfig.capacity.minVal}
-          maxVal={inputConfig.capacity.maxVal}
-          info={
-            <ul>
-              <li>Passenger vehicle: 40-100 kWh</li>
-              <li>Small Van: 50-80 kWh</li>
-              <li>Large Van: 70-120 kWh</li>
-              <li>Heavy Goods Vehicle: 300-1000+ kWh</li>
-            </ul>
-          }
-        />
-        <NumericInputWithValidation
-          label={inputConfig.chargePower.label}
-          state={chargePower}
-          setState={setChargePower}
-          minVal={inputConfig.chargePower.minVal}
-          maxVal={inputConfig.chargePower.maxVal}
-          info={
-            <ul>
-              <li>Slow Charging: 2.3 kW (household sockets)</li>
-              <li>Fast Home Charging: 7kW </li>
-              <li>Public AC Charging: 11-22 kW</li>
-              <li>Rapid DC Charging: 50-100 kW</li>
-              <li>Ultra-Fast DC Charging: 150kW+</li>
-            </ul>
-          }
-        />
-        <div>
-          {useCustomEfficiency ? (
-            <NumericInputWithValidation
-              label={inputConfig.efficiency.label}
-              state={efficiency}
-              setState={setEfficiency}
-              minVal={inputConfig.efficiency.minVal}
-              maxVal={inputConfig.efficiency.maxVal}
-              info={
-                <>
-                  <p>
-                    Typically larger vehicles operate at lower efficiencies.
-                  </p>
-                </>
-              }
+    <>
+      <form>
+        <div className="mb-5 grid grid-cols-1 gap-x-10 gap-y-5 md:grid-cols-2 lg:grid-cols-3">
+          <IntegerInputWiithValidation
+            label={inputConfig.numEV.label}
+            state={numEV}
+            setState={setNumEV}
+            minVal={inputConfig.numEV.minVal}
+            maxVal={inputConfig.numEV.maxVal}
+          />
+          <NumericInputWithValidation
+            label={inputConfig.mileage.label}
+            state={dailyMileage}
+            setState={setDailyMileage}
+            minVal={inputConfig.mileage.minVal}
+            maxVal={inputConfig.mileage.maxVal}
+          />
+          <NumericInputWithValidation
+            label={inputConfig.capacity.label}
+            state={batteryCapacity}
+            setState={setBatteryCapacity}
+            minVal={inputConfig.capacity.minVal}
+            maxVal={inputConfig.capacity.maxVal}
+            info={
+              <ul>
+                <li>Passenger vehicle: 40-100 kWh</li>
+                <li>Small Van: 50-80 kWh</li>
+                <li>Large Van: 70-120 kWh</li>
+                <li>Heavy Goods Vehicle: 300-1000+ kWh</li>
+              </ul>
+            }
+          />
+          <NumericInputWithValidation
+            label={inputConfig.chargePower.label}
+            state={chargePower}
+            setState={setChargePower}
+            minVal={inputConfig.chargePower.minVal}
+            maxVal={inputConfig.chargePower.maxVal}
+            info={
+              <ul>
+                <li>Slow Charging: 2.3 kW (household sockets)</li>
+                <li>Fast Home Charging: 7kW </li>
+                <li>Public AC Charging: 11-22 kW</li>
+                <li>Rapid DC Charging: 50-100 kW</li>
+                <li>Ultra-Fast DC Charging: 150kW+</li>
+              </ul>
+            }
+          />
+          <div>
+            {useCustomEfficiency ? (
+              <NumericInputWithValidation
+                label={inputConfig.efficiency.label}
+                state={efficiency}
+                setState={setEfficiency}
+                minVal={inputConfig.efficiency.minVal}
+                maxVal={inputConfig.efficiency.maxVal}
+                info={
+                  <>
+                    <p>
+                      Typically larger vehicles operate at lower efficiencies.
+                    </p>
+                  </>
+                }
+              />
+            ) : (
+              <NumericDropdown
+                label={inputConfig.efficiency.label}
+                state={efficiency}
+                setState={setEfficiency}
+                minVal={inputConfig.efficiency.minVal}
+                maxVal={inputConfig.efficiency.maxVal}
+                info={
+                  <>
+                    <p>
+                      Typically larger vehicles operate at lower efficiencies.
+                    </p>
+                  </>
+                }
+                options={[
+                  { label: "Car: 4.5 mi/kWh", value: 4.5 },
+                  { label: "Small Van: 3.5 mi/kWh", value: 3.5 },
+                  { label: "Large Van: 2.5 mi/kWh", value: 2.5 },
+                  { label: "HGV: 1.2 mi/kWh", value: 1.2 },
+                ]}
+              ></NumericDropdown>
+            )}
+            <label className="mr-3 inline-block" htmlFor="checkbox">
+              Use custom value
+            </label>
+            <input
+              className="inline-block"
+              id="custom-efficiency"
+              type="checkbox"
+              onChange={(e) => setUseCustomEfficiency(e.target.checked)}
             />
-          ) : (
-            <NumericDropdown
-              label={inputConfig.efficiency.label}
-              state={efficiency}
-              setState={setEfficiency}
-              minVal={inputConfig.efficiency.minVal}
-              maxVal={inputConfig.efficiency.maxVal}
-              info={
-                <>
-                  <p>
-                    Typically larger vehicles operate at lower efficiencies.
-                  </p>
-                </>
-              }
-              options={[
-                { label: "Car: 4.5 mi/kWh", value: 4.5 },
-                { label: "Small Van: 3.5 mi/kWh", value: 3.5 },
-                { label: "Large Van: 2.5 mi/kWh", value: 2.5 },
-                { label: "HGV: 1.2 mi/kWh", value: 1.2 },
-              ]}
-            ></NumericDropdown>
-          )}
-          <label className="mr-3 inline-block" htmlFor="checkbox">
-            Use custom value
-          </label>
-          <input
-            className="inline-block"
-            id="custom-efficiency"
-            type="checkbox"
-            onChange={(e) => setUseCustomEfficiency(e.target.checked)}
-          />
-        </div>
-        <div className="col-span-1">
-          <label className="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-            <p className="mr-3 inline-block">Depth of Discharge (%)</p>
-            <InfoIcon>
-              <p>
-                This is the range of battery percentage when your EV operates
-                in. A larger range means an EV can drive further per charge, but
-                at the cost of battery health.
-              </p>
-            </InfoIcon>
-          </label>
-          <ReactRangeSliderInput
-            className="mt-3 mb-2"
-            min={0}
-            max={100}
-            step={1}
-            defaultValue={batteryDOD}
-            value={batteryDOD}
-            onInput={(event: [number, number]) => {
-              setBatteryDOD([event[0], event[1]]);
-            }}
-          />
-          <div className="flex justify-between">
-            <p>{batteryDOD[0]}</p>
-            <p>{batteryDOD[1]}</p>
+          </div>
+          <div className="col-span-1">
+            <label className="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+              <p className="mr-3 inline-block">Depth of Discharge (%)</p>
+              <InfoIcon>
+                <p>
+                  This is the range of battery percentage when your EV operates
+                  in. A larger range means an EV can drive further per charge,
+                  but at the cost of battery health.
+                </p>
+              </InfoIcon>
+            </label>
+            <ReactRangeSliderInput
+              className="mt-3 mb-2"
+              min={0}
+              max={100}
+              step={1}
+              defaultValue={batteryDOD}
+              value={batteryDOD}
+              onInput={(event: [number, number]) => {
+                setBatteryDOD([event[0], event[1]]);
+              }}
+            />
+            <div className="flex justify-between">
+              <p>{batteryDOD[0]}</p>
+              <p>{batteryDOD[1]}</p>
+            </div>
           </div>
         </div>
-      </div>
-      <button
-        className="cursor-pointer rounded border border-blue-500 bg-transparent px-4 py-2 font-semibold text-blue-700 hover:border-transparent hover:bg-blue-500 hover:text-white disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-300 disabled:text-gray-500"
-        type="submit"
-        disabled={!validInput}
-        onClick={handleSubmit}
-      >
-        Submit
-      </button>
-    </form>
+        <button
+          className="cursor-pointer rounded border border-blue-500 bg-transparent px-4 py-2 font-semibold text-blue-700 hover:border-transparent hover:bg-blue-500 hover:text-white disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-300 disabled:text-gray-500"
+          type="submit"
+          disabled={!validInput}
+          onClick={handleSubmit}
+        >
+          Submit
+        </button>
+      </form>
+      {resultLoaded && result && <Dashboard output={result} />}
+    </>
   );
 }
 

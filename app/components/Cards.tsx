@@ -1,3 +1,5 @@
+"use client";
+
 import { ReactNode } from "react";
 
 /**
@@ -8,7 +10,7 @@ import { ReactNode } from "react";
  */
 export function CardGrid({ children }: { children: ReactNode }) {
   return (
-    <div className="lg: grid grid-cols-1 gap-4 p-10 md:grid-cols-2 lg:grid-cols-4">
+    <div className="lg: grid grid-cols-1 gap-4 p-10 md:grid-cols-2 lg:grid-cols-3">
       {children}
     </div>
   );
@@ -40,6 +42,16 @@ function BaseCard({
   );
 }
 
+/**
+ * A simple KPI card component that shows a title, value and some optional
+ * notes.
+ * @param value - The value to be emphasized
+ * @param title - The title to describe the KPI
+ * @param className - (Optional) The styling class name
+ * @param unit - (Optional) The unit of the displayed value
+ * @param notes - (Optional) Text to be displayed at the bottom of the card
+ * @returns
+ */
 export function CardKPI({
   value,
   title,
@@ -64,4 +76,26 @@ export function CardKPI({
   );
 }
 
-export function CardWithChart({ data, xAxis, yAxis, xUnit, yUnit, notes });
+export function CardWithChart({
+  title,
+  chart,
+  className,
+  notes,
+}: {
+  title: string;
+  chart: ReactNode;
+  className?: string;
+  notes?: string;
+}) {
+  return (
+    <div
+      className={`${className ?? ""} flex min-h-[150px] items-center gap-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800`}
+    >
+      <div className="flex w-[40%] flex-col justify-between gap-4">
+        <h5 className="text-sm font-bold">{title}</h5>
+        <p className="text-sm">{notes}</p>
+      </div>
+      <div className="min-h-[150px] w-[60%]">{chart}</div>
+    </div>
+  );
+}

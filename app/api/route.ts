@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { calculateChargeCost, calculateChargeTime } from "../lib/battery";
 
 type Inputs = {
   numEV: number;
@@ -90,8 +91,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const reportId = Math.random().toString(36).substr(2, 9);
-  reports[reportId] = {
+  const output: ReportOutputs = {
     numEV,
     dailyMileage,
     batteryCapacity,
@@ -105,7 +105,10 @@ export async function POST(req: Request) {
     reducedChargingCost,
   };
 
-  return Response.json({ reportId });
+  const reportId = Math.random().toString(36).substr(2, 9);
+  reports[reportId] = output;
+
+  return Response.json(output);
 }
 
 export async function GET(req: NextRequest) {
@@ -117,63 +120,4 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json(reports[reportId]);
-}
-
-/**
- * Calculate the charge time of a battery given its capacity, charging power
- * and start & end SOC.
- *
- * Implementation: Splits the charging into two phases:
- * 1. Constant current phase (0% to 80%) - the capacity increases with constant power
- * 2. Constant voltage phase (80% to 100%) - the capacity increases logarithmically as it approaches 100%
- *
- * Assumptions:
- * 1. Charging is 90% efficient
- * 2. Charging time from 80% to 99% is as long as 0 to 80%.
- *
- * @param SOC_start - Starting SOC before charging in decimals [-]
- * @param SOC_end - SOC reached at the end of charge in decimals [-]
- * @param capacity - Total battery capacity [kWh]
- * @param chargePower - Rate of charge [kW]
- * @param chargeEfficiency - (Optional) Charge Efficiency [-]. Default to 0.9
- * @returns Charging time [hours]
- */
-function calculateChargeTime(
-  SOC_start: number,
-  SOC_end: number,
-  capacity: number,
-  chargePower: number,
-  chargeEfficiency: number = 0.9,
-): number {
-  // Config: Charge efficiency set to 0.9
-  let time = 0;
-
-  // Calculate charge time for phase 1
-  if (SOC_start < 0.8) {
-    time += ((0.8 - SOC_start) * capacity) / (chargeEfficiency * chargePower);
-  }
-
-  // Calculate time constant `tau` such that the charge time from 80% to 99%
-  // is equal to the charge time from 0% to 80%
-  const t_p1 = (0.8 * capacity) / (chargeEfficiency * chargePower); // Charge time for phase 1
-  const tau = t_p1 / Math.log(2);
-
-  // Calculate charge time for phase 2 (modelled as logarithmic function of SOC)
-  if (SOC_end > 0.8) {
-    time += tau * Math.log((1 - 0.8) / (1 - SOC_end));
-  }
-
-  return time;
-}
-
-/**
- * Calculate the charging cost given the total energy and the electricity
- * tariff rate
- *
- * @param energy - Amount of energy charged [kWh]
- * @param rate - Cost of energy per kW [£/kWh]
- * @returns
- */
-function calculateChargeCost(energy: number, rate: number): number {
-  return rate * energy;
 }
