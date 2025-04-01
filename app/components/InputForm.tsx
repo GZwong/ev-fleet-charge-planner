@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import ReactRangeSliderInput from "react-range-slider-input";
+import "react-range-slider-input/dist/style.css";
 
 // Configuration for input values
 const inputConfig = {
@@ -53,6 +56,7 @@ function InputForm() {
   const [batteryCapacity, setBatteryCapacity] = useState<number>(75);
   const [chargePower, setChargePower] = useState<number>(100);
   const [efficiency, setEfficiency] = useState<number>(3);
+  const [batteryDOD, setBatteryDOD] = useState<[number, number]>([10, 90]);
 
   // State denoting whether all values are valid
   const [validInput, setValidInput] = useState<boolean>(false);
@@ -60,6 +64,8 @@ function InputForm() {
   // Whether preselected or custom efficiencies are used as an input
   const [useCustomEfficiency, setUseCustomEfficiency] =
     useState<boolean>(false);
+
+  const router = useRouter();
 
   // Constantly checks input for validity
   useEffect(() => {
@@ -92,6 +98,7 @@ function InputForm() {
           batteryCapacity,
           chargePower,
           efficiency,
+          batteryDOD,
         }),
       });
 
@@ -100,7 +107,11 @@ function InputForm() {
       }
 
       const data = await response.json();
-      console.log("Data: ", data);
+      const reportId = data.reportId;
+      console.log("Report ID: ", reportId);
+
+      // Obtain the report
+      router.push(`/report/${reportId}`); // Redirect to the report page
     } catch (error) {
       console.log("Error has been catched");
     }
@@ -201,6 +212,33 @@ function InputForm() {
             type="checkbox"
             onChange={(e) => setUseCustomEfficiency(e.target.checked)}
           />
+        </div>
+        <div className="col-span-1">
+          <label className="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+            <p className="mr-3 inline-block">Depth of Discharge (%)</p>
+            <InfoIcon>
+              <p>
+                This is the range of battery percentage when your EV operates
+                in. A larger range means an EV can drive further per charge, but
+                at the cost of battery health.
+              </p>
+            </InfoIcon>
+          </label>
+          <ReactRangeSliderInput
+            className="mt-3 mb-2"
+            min={0}
+            max={100}
+            step={1}
+            defaultValue={batteryDOD}
+            value={batteryDOD}
+            onInput={(event) => {
+              setBatteryDOD([event[0], event[1]]);
+            }}
+          />
+          <div className="flex justify-between">
+            <p>{batteryDOD[0]}</p>
+            <p>{batteryDOD[1]}</p>
+          </div>
         </div>
       </div>
       <button
@@ -336,7 +374,7 @@ function InfoIcon({ children }: InfoIconProps) {
         />
       </svg>
 
-      <div className="absolute top-full left-1/2 mt-1 w-60 -translate-x-1/2 scale-0 transform rounded-lg bg-gray-800 p-2 text-xs text-white opacity-0 transition-all group-hover:scale-100 group-hover:opacity-100">
+      <div className="absolute top-full left-1/2 z-5 mt-1 w-60 -translate-x-1/2 scale-0 transform rounded-lg bg-gray-800 p-2 text-xs text-white opacity-0 transition-all group-hover:scale-100 group-hover:opacity-100">
         {children}
       </div>
     </div>
