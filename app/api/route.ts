@@ -25,6 +25,7 @@ export type ReportOutputs = {
   totalFleetEnergyDemand: number;
   totalChargingCost: number;
   reducedChargingCost: number;
+  numDischargeCyclesPerYear: number;
 };
 
 const electricRate = 0.245; // Flat electricity tariff [£/kWh]
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
   }: Inputs = await req.json();
 
   const usableCapacity: number =
-    (batteryDOD[1] - batteryDOD[0]) * batteryCapacity;
+    ((batteryDOD[1] - batteryDOD[0]) / 100) * batteryCapacity;
 
   // Daily Energy Consumption
   const dailyEnergyConsumptionPerEV: number = dailyMileage / efficiency;
@@ -91,6 +92,9 @@ export async function POST(req: Request) {
     );
   }
 
+  // Number of charge/discharge cycles per year
+  const numDischargeCyclesPerYear = numDischargeCyclesPerDay * 365.25;
+
   const output: ReportOutputs = {
     numEV,
     dailyMileage,
@@ -103,6 +107,7 @@ export async function POST(req: Request) {
     totalFleetEnergyDemand,
     totalChargingCost,
     reducedChargingCost,
+    numDischargeCyclesPerYear,
   };
 
   const reportId = Math.random().toString(36).substr(2, 9);

@@ -69,14 +69,14 @@ export function CardKPI({
     <BaseCard className={className}>
       <h5 className="text-sm font-bold">{title}</h5>
       <h1 className="text-center text-4xl">
-        {value.toFixed(1)} <span className="text-sm">{unit}</span>
+        {value.toFixed(0)} <span className="text-sm">{unit}</span>
       </h1>
       <p className="text-sm">{notes}</p>
     </BaseCard>
   );
 }
 
-export function CardWithChart({
+export function CardWithChartOnRight({
   title,
   chart,
   className,
@@ -97,5 +97,25 @@ export function CardWithChart({
       </div>
       <div className="min-h-[150px] w-[60%]">{chart}</div>
     </div>
+  );
+}
+
+export function CardWithChart({
+  title,
+  chart,
+  className,
+  notes,
+}: {
+  title: string;
+  chart: ReactNode;
+  className?: string;
+  notes?: string;
+}) {
+  return (
+    <BaseCard className={className}>
+      <h5 className="text-sm font-bold">{title}</h5>
+      {chart}
+      <p className="text-sm">{notes}</p>
+    </BaseCard>
   );
 }

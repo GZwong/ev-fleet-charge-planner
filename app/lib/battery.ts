@@ -83,7 +83,7 @@ export function calculateChargeCostAcrossRates(
   return chargeCosts;
 }
 
-type BatteryCapacityAtTime = {
+export type BatteryCapacityAtTime = {
   time: number;
   capacity: number;
 };
@@ -102,4 +102,26 @@ export function calculateOptimumChargeProfile(
   }
 
   return [{ time: 0, capacity: 2 }];
+}
+
+/**
+ * Estimate the remaining capacity of a battery assuming it follows the equation:
+ * Remaining Capacity = Initial Capacity x (1 - Annual Degradation) ^ Years
+ *
+ * Assumption: The annual degradation default to 3.5%, which is true for deeper
+ * cycles that is typically experienced by fleet vehicles. This estimation does
+ * not consider the effects of temperature and depth of discharge.
+ *
+ * @param initialCapacity - Initial Capacity of a battery [kWh / any appropriate units]
+ * @param year - The number of years passed
+ * @param annualDegradation - (Optional) The rate of degradation in decimal [-]
+ *                            Default to 0.035 for 3.5% annual degradation.
+ * @returns The ramaining capacity of a battery [Same units as provided in initialCapacity]
+ */
+export function calculateRemainingCapacity(
+  initialCapacity: number,
+  year: number,
+  annualDegradation: number = 0.035,
+): number {
+  return initialCapacity * Math.pow(1 - annualDegradation, year);
 }
