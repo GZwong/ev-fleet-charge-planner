@@ -69,7 +69,7 @@ export function CardKPI({
     <BaseCard className={className}>
       <h5 className="text-sm font-bold">{title}</h5>
       <h1 className="text-center text-4xl">
-        {value.toFixed(0)} <span className="text-sm">{unit}</span>
+        {value && value.toFixed(0)} <span className="text-sm">{unit}</span>
       </h1>
       <p className="text-sm">{notes}</p>
     </BaseCard>

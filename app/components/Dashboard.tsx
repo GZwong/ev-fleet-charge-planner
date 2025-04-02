@@ -138,8 +138,10 @@ export default function Dashboard({ output }: { output: ReportOutputs }) {
 
   return (
     <div className="container m-auto">
-      <h1 className="m-auto mt-2 mb-2 text-center text-4xl">Charging Report</h1>
-      <hr className="m-auto w-[50%]"></hr>
+      <h1 className="m-auto mt-20 mb-2 text-center text-4xl">
+        Charging Report
+      </h1>
+      <hr className="m-auto mt-5 mb-2 w-[80%]"></hr>
 
       {/* KPI: Daily Energy Consumption*/}
       <CardGrid>

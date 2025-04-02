@@ -6,6 +6,7 @@ import ReactRangeSliderInput from "react-range-slider-input";
 import "react-range-slider-input/dist/style.css";
 import { ReportOutputs } from "../api/route";
 import Dashboard from "./Dashboard";
+import { Spinner } from "./Spinner";
 
 // Configuration for input values
 const inputConfig = {
@@ -26,7 +27,7 @@ const inputConfig = {
   },
   chargePower: {
     label: "Charging Power Rating (kW)",
-    minVal: 0,
+    minVal: 1,
     maxVal: 350,
   },
   efficiency: {
@@ -90,38 +91,47 @@ function InputForm() {
     );
   }, [numEV, dailyMileage, batteryCapacity, chargePower, efficiency]);
 
-  // Submit user inputs to calculation API
-  async function handleSubmit(e: React.MouseEvent<HTMLButtonElement>) {
-    e.preventDefault();
+  useEffect(() => {
     setIsLoading(true);
 
-    try {
-      const response = await fetch("/api", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          numEV,
-          dailyMileage,
-          batteryCapacity,
-          chargePower,
-          efficiency,
-          batteryDOD,
-        }),
-      });
+    async function updateDashboard() {
+      try {
+        const response = await fetch("/api", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            numEV,
+            dailyMileage,
+            batteryCapacity,
+            chargePower,
+            efficiency,
+            batteryDOD,
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch calculation results.");
+        if (!response.ok) {
+          throw new Error("Failed to fetch calculation results.");
+        }
+
+        const data: ReportOutputs = await response.json();
+        setResult(data);
+        setResultLoaded(true);
+      } catch (error) {
+        console.log("Error has been catched");
+      } finally {
+        setIsLoading(false);
       }
-
-      const data: ReportOutputs = await response.json();
-      setResult(data);
-      setResultLoaded(true);
-    } catch (error) {
-      console.log("Error has been catched");
-    } finally {
-      setIsLoading(false);
     }
-  }
+
+    updateDashboard();
+  }, [
+    numEV,
+    dailyMileage,
+    batteryCapacity,
+    chargePower,
+    efficiency,
+    batteryDOD,
+  ]);
 
   return (
     <>
@@ -248,16 +258,14 @@ function InputForm() {
             </div>
           </div>
         </div>
-        <button
-          className="cursor-pointer rounded border border-blue-500 bg-transparent px-4 py-2 font-semibold text-blue-700 hover:border-transparent hover:bg-blue-500 hover:text-white disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-300 disabled:text-gray-500"
-          type="submit"
-          disabled={!validInput}
-          onClick={handleSubmit}
-        >
-          Submit
-        </button>
       </form>
-      {resultLoaded && result && <Dashboard output={result} />}
+      {/* Spinner to indicate result is loading */}
+      <div className="min-h-[100vh]">
+        {isLoading && <Spinner />}
+        {!isLoading && validInput && resultLoaded && result && (
+          <Dashboard output={result} />
+        )}
+      </div>
     </>
   );
 }
