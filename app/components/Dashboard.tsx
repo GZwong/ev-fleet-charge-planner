@@ -11,6 +11,8 @@ import {
   ResponsiveContainer,
   Tooltip,
   Label,
+  BarChart,
+  Bar,
 } from "recharts";
 import { linspace } from "../lib/utils";
 import { ReportOutputs } from "@/app/api/route";
@@ -45,8 +47,6 @@ export default function Dashboard({ output }: { output: ReportOutputs }) {
     maxRate,
     5,
   );
-
-  console.log(chargeCostAcrossRates);
   const ChargeCostAcrossRatesChart: ReactNode = (
     <ResponsiveContainer minHeight={150}>
       <LineChart data={chargeCostAcrossRates}>
@@ -69,6 +69,26 @@ export default function Dashboard({ output }: { output: ReportOutputs }) {
           }}
         />
       </LineChart>
+    </ResponsiveContainer>
+  );
+
+  // Show savings with tariff
+  const data = [{ totalChargingCost, reducedChargingCost }];
+  const ReducedChargeCostChart: ReactNode = (
+    <ResponsiveContainer minHeight={150}>
+      <BarChart data={data}>
+        <Bar dataKey="totalChargingCost" fill="#8884d8" />
+        <Bar dataKey="reducedChargingCost" fill="#82ca9d" />
+        <XAxis></XAxis>
+        <YAxis></YAxis>
+        <Tooltip
+          formatter={(value: number, name: string, props) => {
+            const formattedValue = value.toFixed(2);
+            const formattedName = name.toUpperCase();
+            return [`£${formattedValue}`, `${formattedName}`];
+          }}
+        />
+      </BarChart>
     </ResponsiveContainer>
   );
 
@@ -115,8 +135,15 @@ export default function Dashboard({ output }: { output: ReportOutputs }) {
         <CardWithChart
           title="Charging Cost"
           chart={ChargeCostAcrossRatesChart}
-          className="col-span-2"
+          className="col-span-1 md:col-span-2"
           notes={`At a flat, nominal rate of £${nominalRate.toFixed(2)}/kWh, you are paying £${calculateChargeCost(dailyEnergyConsumptionPerEV * numEV, nominalRate).toFixed(2)} for charging.`}
+        ></CardWithChart>
+
+        {/* Area Chart: Charging Cost vs Rate*/}
+        <CardWithChart
+          title="Flat vs Economy 7 Rate"
+          chart={ReducedChargeCostChart}
+          className="col-span-1"
         ></CardWithChart>
       </CardGrid>
     </div>
