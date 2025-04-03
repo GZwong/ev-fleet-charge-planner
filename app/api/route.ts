@@ -26,8 +26,8 @@ export type ReportOutputs = {
   chargeTimePerEV: number;
   mileagePerCharge: number;
   totalFleetEnergyDemand: number;
-  totalChargingCost: number;
-  reducedChargingCost: number;
+  totalChargingCostPerEV: number;
+  reducedChargingCostPerEV: number;
   numDischargeCyclesPerYear: number;
 };
 
@@ -71,26 +71,29 @@ export async function POST(req: Request) {
   const mileagePerCharge = usableCapacity * efficiency;
 
   // Normal Charging Cost [£] (Flat Rate)
-  const totalChargingCost = calculateChargeCost(batteryCapacity, electricRate);
+  const totalChargingCostPerEV = calculateChargeCost(
+    dailyEnergyConsumptionPerEV,
+    electricRate,
+  );
 
   // Off-Peak Charging Cost [£] - We assume overnight charging is cheaper
   const numDischargeCyclesPerDay = dailyEnergyConsumptionPerEV / usableCapacity;
-  let reducedChargingCost = 0;
+  let reducedChargingCostPerEV = 0;
   // If one full, overnight charge at reduced rate sufficient for daily mileage
   if (numDischargeCyclesPerDay < 1) {
-    reducedChargingCost = calculateChargeCost(
+    reducedChargingCostPerEV = calculateChargeCost(
       dailyEnergyConsumptionPerEV,
       electricRateOffPeak,
     );
   }
   // At higher daily mileages, one full, overnight charge at reduced rate is
-  // insufficient so supplement with charging at  flat rates throughout the day
+  // insufficient so supplement with charging at normal rates throughout the day
   else {
-    reducedChargingCost = calculateChargeCost(
+    reducedChargingCostPerEV = calculateChargeCost(
       usableCapacity,
       electricRateOffPeak,
     );
-    reducedChargingCost += calculateChargeCost(
+    reducedChargingCostPerEV += calculateChargeCost(
       dailyEnergyConsumptionPerEV - usableCapacity,
       electricRate,
     );
@@ -111,8 +114,8 @@ export async function POST(req: Request) {
     chargeTimePerEV,
     mileagePerCharge,
     totalFleetEnergyDemand,
-    totalChargingCost,
-    reducedChargingCost,
+    totalChargingCostPerEV,
+    reducedChargingCostPerEV,
     numDischargeCyclesPerYear,
   };
 

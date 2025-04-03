@@ -42,8 +42,8 @@ export default function Dashboard({ output }: { output: ReportOutputs }) {
     dailyEnergyConsumptionPerEV,
     chargeTimePerEV,
     totalFleetEnergyDemand,
-    totalChargingCost,
-    reducedChargingCost,
+    totalChargingCostPerEV,
+    reducedChargingCostPerEV,
     numDischargeCyclesPerYear,
   } = output;
 
@@ -81,12 +81,12 @@ export default function Dashboard({ output }: { output: ReportOutputs }) {
   );
 
   // Chart showing difference between flat vs off peak rate
-  const data = [{ totalChargingCost, reducedChargingCost }];
+  const data = [{ totalChargingCostPerEV, reducedChargingCostPerEV }];
   const ReducedChargeCostChart: ReactNode = (
     <ResponsiveContainer minHeight={150}>
       <BarChart data={data}>
-        <Bar dataKey="totalChargingCost" fill="#8884d8" />
-        <Bar dataKey="reducedChargingCost" fill="#82ca9d" />
+        <Bar dataKey="totalChargingCostPerEV" fill="#8884d8" />
+        <Bar dataKey="reducedChargingCostPerEV" fill="#82ca9d" />
         <XAxis></XAxis>
         <YAxis></YAxis>
         <Tooltip
@@ -243,9 +243,10 @@ export default function Dashboard({ output }: { output: ReportOutputs }) {
 
         {/* Bar Chart: Flat vs Reduced Rate */}
         <CardWithChart
-          title="Flat vs Economy 7 Rate"
+          title="Charging Cost: Flat vs Off-Peak"
           chart={ReducedChargeCostChart}
           className="col-span-1"
+          notes="Take advantage of lower electricity rates overnight."
         ></CardWithChart>
 
         {/* Line Chart: Charging Profile*/}
