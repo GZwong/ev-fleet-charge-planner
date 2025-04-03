@@ -8,6 +8,7 @@ type Inputs = {
   chargePower: number;
   efficiency: number;
   batteryDOD: [number, number];
+  workingHours: [number, number];
 };
 
 export type ReportOutputs = {
@@ -18,6 +19,7 @@ export type ReportOutputs = {
   chargePower: number;
   efficiency: number;
   batteryDOD: [number, number];
+  workingHours: [number, number];
 
   // Computed values
   dailyEnergyConsumptionPerEV: number;
@@ -42,6 +44,7 @@ export async function POST(req: Request) {
     chargePower,
     efficiency,
     batteryDOD,
+    workingHours,
   }: Inputs = await req.json();
 
   const usableCapacity: number =
@@ -102,6 +105,7 @@ export async function POST(req: Request) {
     chargePower,
     efficiency,
     batteryDOD,
+    workingHours,
     dailyEnergyConsumptionPerEV,
     chargeTimePerEV,
     totalFleetEnergyDemand,

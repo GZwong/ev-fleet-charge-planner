@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ReactRangeSliderInput from "react-range-slider-input";
 import "react-range-slider-input/dist/style.css";
 import { ReportOutputs } from "../api/route";
+import { toHtmlId } from "../lib/utils";
 import Dashboard from "./Dashboard";
 import { Spinner } from "./Spinner";
+import { Accordion } from "./Accordion";
 
 // Configuration for input values
 const inputConfig = {
@@ -37,29 +39,15 @@ const inputConfig = {
   },
 };
 
-type inputArguments = {
-  label: string;
-  state: number;
-  setState: React.Dispatch<React.SetStateAction<number>>;
-  minVal?: number;
-  maxVal?: number;
-  info?: React.ReactNode;
-  children?: React.ReactNode;
-};
-
-// Each dropdown option has an associated value and label
-type DropdownOptions = {
-  options: { label: string; value: number }[];
-};
-
 function InputForm() {
   // State for input values
   const [numEV, setNumEV] = useState<number>(100);
-  const [dailyMileage, setDailyMileage] = useState<number>(100);
-  const [batteryCapacity, setBatteryCapacity] = useState<number>(75);
-  const [chargePower, setChargePower] = useState<number>(100);
-  const [efficiency, setEfficiency] = useState<number>(3);
+  const [dailyMileage, setDailyMileage] = useState<number>(250);
+  const [batteryCapacity, setBatteryCapacity] = useState<number>(60);
+  const [chargePower, setChargePower] = useState<number>(50);
+  const [efficiency, setEfficiency] = useState<number>(4.5);
   const [batteryDOD, setBatteryDOD] = useState<[number, number]>([10, 90]);
+  const [workingHours, setWorkingHours] = useState<[number, number]>([7, 19]);
 
   // State denoting loading status of computation
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -72,8 +60,6 @@ function InputForm() {
   // Whether preselected or custom efficiencies are used as an input
   const [useCustomEfficiency, setUseCustomEfficiency] =
     useState<boolean>(false);
-
-  // const router = useRouter();
 
   // Constantly checks input for validity
   useEffect(() => {
@@ -106,6 +92,7 @@ function InputForm() {
             chargePower,
             efficiency,
             batteryDOD,
+            workingHours,
           }),
         });
 
@@ -131,6 +118,7 @@ function InputForm() {
     chargePower,
     efficiency,
     batteryDOD,
+    workingHours,
   ]);
 
   return (
@@ -230,34 +218,35 @@ function InputForm() {
               onChange={(e) => setUseCustomEfficiency(e.target.checked)}
             />
           </div>
-          <div className="col-span-1">
-            <label className="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-              <p className="mr-3 inline-block">Depth of Discharge (%)</p>
-              <InfoIcon>
-                <p>
-                  This is the range of battery percentage when your EV operates
-                  in. A larger range means an EV can drive further per charge,
-                  but at the cost of battery health.
-                </p>
-              </InfoIcon>
-            </label>
-            <ReactRangeSliderInput
-              className="mt-3 mb-2"
-              min={0}
-              max={100}
-              step={1}
-              defaultValue={batteryDOD}
-              value={batteryDOD}
-              onInput={(event: [number, number]) => {
-                setBatteryDOD([event[0], event[1]]);
-              }}
-            />
-            <div className="flex justify-between">
-              <p>{batteryDOD[0]}</p>
-              <p>{batteryDOD[1]}</p>
+        </div>
+
+        <Accordion title="Additional Information">
+          <div className="mb-5 grid grid-cols-1 gap-x-10 gap-y-5 md:grid-cols-2 lg:grid-cols-3">
+            {/* Depth of Discharge Slider */}
+            <div className="col-span-1">
+              <RangeSlider
+                label="Depth of Discharge (%)"
+                state={batteryDOD}
+                setState={setBatteryDOD}
+                minVal={0}
+                maxVal={100}
+                info="This is the range of battery percentage when your EV operates in. A larger range means an EV can drive further per charge, but at the cost of battery health."
+              />
+            </div>
+
+            {/* Working Hours Slider */}
+            <div className="col-span-1">
+              <RangeSlider
+                label="Working Hours"
+                state={workingHours}
+                setState={setWorkingHours}
+                minVal={0}
+                maxVal={24}
+                info="This is the hours when your EVs are on the move from 00:00 to 24:00"
+              />
             </div>
           </div>
-        </div>
+        </Accordion>
       </form>
       {/* Spinner to indicate result is loading */}
       <div className="min-h-[100vh]">
@@ -270,7 +259,22 @@ function InputForm() {
   );
 }
 
-function NumericInputWithValidation(props: inputArguments) {
+type InputArguments = {
+  label: string;
+  state: number;
+  setState: React.Dispatch<React.SetStateAction<number>>;
+  minVal?: number;
+  maxVal?: number;
+  info?: React.ReactNode;
+  children?: React.ReactNode;
+};
+
+// Each dropdown option has an associated value and label
+type DropdownOptions = {
+  options: { label: string; value: number }[];
+};
+
+function NumericInputWithValidation(props: InputArguments) {
   // Turn the label into a valid ID
   const id = toHtmlId(props.label);
 
@@ -310,7 +314,7 @@ function NumericInputWithValidation(props: inputArguments) {
   );
 }
 
-function NumericDropdown(props: inputArguments & DropdownOptions) {
+function NumericDropdown(props: InputArguments & DropdownOptions) {
   // Turn the label into a valid ID
   const id = toHtmlId(props.label);
 
@@ -359,7 +363,7 @@ function NumericDropdown(props: inputArguments & DropdownOptions) {
   );
 }
 
-function IntegerInputWiithValidation(props: inputArguments) {
+function IntegerInputWiithValidation(props: InputArguments) {
   return (
     <NumericInputWithValidation {...props}>
       {!Number.isInteger(props.state) && (
@@ -369,11 +373,47 @@ function IntegerInputWiithValidation(props: inputArguments) {
   );
 }
 
-type InfoIconProps = {
-  children: React.ReactNode;
+type RangeSliderArguments = {
+  label: string;
+  state: [number, number];
+  setState: React.Dispatch<React.SetStateAction<[number, number]>>;
+  minVal: number;
+  maxVal: number;
+  step?: number;
+  info?: React.ReactNode;
 };
 
-function InfoIcon({ children }: InfoIconProps) {
+function RangeSlider(props: RangeSliderArguments) {
+  return (
+    <>
+      <label className="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+        <p className="mr-3 inline-block">{props.label}</p>
+        {props.info && (
+          <InfoIcon>
+            <p>{props.info}</p>
+          </InfoIcon>
+        )}
+      </label>
+      <ReactRangeSliderInput
+        className="mt-3 mb-2"
+        min={props.minVal}
+        max={props.maxVal}
+        step={props.step}
+        defaultValue={props.state}
+        value={props.state}
+        onInput={(event: [number, number]) => {
+          props.setState([event[0], event[1]]);
+        }}
+      />
+      <div className="flex justify-between">
+        <p>{props.state[0]}</p>
+        <p>{props.state[1]}</p>
+      </div>
+    </>
+  );
+}
+
+function InfoIcon({ children }: { children: ReactNode }) {
   return (
     <div className="group relative inline-block">
       <svg
@@ -399,7 +439,3 @@ function InfoIcon({ children }: InfoIconProps) {
 }
 
 export default InputForm;
-
-function toHtmlId(str: string): string {
-  return str.toLowerCase().replace(/\s+/g, "-");
-}

@@ -59,11 +59,16 @@ export function calculateChargeCost(energy: number, rate: number): number {
   return rate * energy;
 }
 
-type ChargeCostAtRate = {
-  rate: number;
-  cost: number;
-};
-
+/**
+ * Construct an array of objects containing the charging cost across a range
+ * of electric tariff rate.
+ * @param energy - The energy to be gained after charging (kWh)
+ * @param minRate - Minimum electric rate (£/kWh)
+ * @param maxRate - Maximum electric rate (£/kWh)
+ * @param numPoints - Number of points between minRate and maxRate
+ * @returns An array of objects, each object containing the electricity tariff
+ *          rate `rate` and its corresponding charging cost `cost` of charging
+ */
 export function calculateChargeCostAcrossRates(
   energy: number,
   minRate: number,
@@ -73,7 +78,7 @@ export function calculateChargeCostAcrossRates(
   let chargeCosts: ChargeCostAtRate[] = [];
 
   const electricRates = linspace(minRate, maxRate, numPoints);
-  electricRates.map((rate, idx) => {
+  electricRates.map((rate) => {
     chargeCosts.push({
       rate: rate,
       cost: energy * rate,
@@ -83,25 +88,111 @@ export function calculateChargeCostAcrossRates(
   return chargeCosts;
 }
 
+type ChargeCostAtRate = {
+  rate: number;
+  cost: number;
+};
+
 export type BatteryCapacityAtTime = {
   time: number;
   capacity: number;
+  SOC?: number;
+  mileage?: number;
 };
 
+/**
+ * Estimate the charging profile of an EV battery throughout the day.
+ *
+ * Assumptions:
+ * 1. Charging has two phases: normal charging and slow charging above 80% SOC
+ * 2. The vehicle keeps moving until daily mileage is reached.
+ * 3. Assumes constant speed
+ *
+ * @param batteryCapacity
+ * @param chargePower
+ * @param dailyMileage
+ * @param vehicleEfficiency - The efficiency of the vehicle [mi/kWh]
+ * @param startHour
+ * @param endHour
+ * @param speed - Average vehicle speed [mph]
+ * @param SOC_min - Minimum allowable state of charge in decimals [-]
+ * @param SOC_max - Maximum allowable state of charge in decimals [-]
+ * @param chargeEfficiency - Charging efficiency in decimals [-]
+ * @param maxChargePower
+ * @returns An array of object, consisting of the battery SOC throughout every
+ *          hour of the day
+ */
 export function calculateOptimumChargeProfile(
   batteryCapacity: number,
   chargePower: number,
   dailyMileage: number,
-  SOC_min: number = 0.99,
-  SOC_max: number = 0,
+  vehicleEfficiency: number,
+  startHour: number,
+  endHour: number,
+  speed: number = 40,
+  SOC_min: number = 0,
+  SOC_max: number = 0.99,
+  chargeEfficiency: number = 0.9,
   maxChargePower: number = 0,
 ): BatteryCapacityAtTime[] {
-  // If maximum charging rate provided, limit the charge power to max
-  if (maxChargePower != 0) {
-    chargePower = maxChargePower;
+  if (maxChargePower !== 0) {
+    chargePower = Math.min(chargePower, maxChargePower);
   }
 
-  return [{ time: 0, capacity: 2 }];
+  let remainingCapacity = batteryCapacity * SOC_max;
+  let remainingMileage = dailyMileage;
+  let currentHour = startHour;
+  let chargeProfile = [];
+
+  // Time constant for slow charge above 80%
+  const t_p1 = (0.8 * batteryCapacity) / (chargeEfficiency * chargePower);
+  const tau = t_p1 / Math.log(2);
+
+  while (remainingMileage > 0 && currentHour < endHour) {
+    let energyUsedNextHour = speed / vehicleEfficiency;
+    let SOC_current = remainingCapacity / batteryCapacity;
+
+    // Driving phase: Ensure battery does not go negative
+    if (remainingCapacity >= energyUsedNextHour) {
+      remainingCapacity = Math.max(remainingCapacity - energyUsedNextHour, 0);
+      remainingMileage = Math.max(remainingMileage - speed, 0);
+    } else {
+      // Enter charging phase if not enough charge to drive
+      while (SOC_current < SOC_max && currentHour < endHour) {
+        if (SOC_current < 0.8) {
+          remainingCapacity = Math.min(
+            remainingCapacity + chargeEfficiency * chargePower,
+            batteryCapacity,
+          );
+        } else {
+          SOC_current = 1 - 0.2 * Math.exp(-currentHour / tau);
+          remainingCapacity = Math.min(
+            SOC_current * batteryCapacity,
+            batteryCapacity,
+          );
+        }
+        SOC_current = remainingCapacity / batteryCapacity;
+
+        chargeProfile.push({
+          time: currentHour,
+          capacity: remainingCapacity,
+          SOC: SOC_current,
+          mileage: remainingMileage,
+        });
+        currentHour++;
+      }
+    }
+
+    chargeProfile.push({
+      time: currentHour,
+      capacity: remainingCapacity,
+      SOC: SOC_current,
+      mileage: remainingMileage,
+    });
+    currentHour++;
+  }
+
+  return chargeProfile;
 }
 
 /**

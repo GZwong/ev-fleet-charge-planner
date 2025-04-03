@@ -3,9 +3,9 @@
 import { ReactNode } from "react";
 
 /**
- * A grid which cards can be laid onto
+ * A grid acting as parent of cards
  *
- * @param param0
+ * @param children - React node that contains cards
  * @returns
  */
 export function CardGrid({ children }: { children: ReactNode }) {
@@ -76,6 +76,15 @@ export function CardKPI({
   );
 }
 
+/**
+ * A card component that displays a title with a chart on the right.
+ *
+ * @param title - The title to describe the card
+ * @param chart - React Node (intended to be a chart) to be added to the card
+ * @param className - (Optional) The styling class name
+ * @param notes  - (Optional) Text to be displayed at the bottom of the card
+ * @returns
+ */
 export function CardWithChartOnRight({
   title,
   chart,
@@ -100,6 +109,16 @@ export function CardWithChartOnRight({
   );
 }
 
+/**
+ * A card component that displays a title, a chart and optionally notes from
+ * top to bottom.
+ *
+ * @param title - The title to describe the card
+ * @param chart - React Node (intended to be a chart) to be added to the card
+ * @param className - (Optional) The styling class name
+ * @param notes  - (Optional) Text to be displayed at the bottom of the card
+ * @returns
+ */
 export function CardWithChart({
   title,
   chart,

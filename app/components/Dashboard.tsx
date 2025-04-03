@@ -1,11 +1,9 @@
 "use client";
 
 import { ReactNode } from "react";
-import { notFound } from "next/navigation";
 import {
   LineChart,
   Line,
-  CartesianGrid,
   XAxis,
   YAxis,
   ResponsiveContainer,
@@ -13,6 +11,7 @@ import {
   Label,
   BarChart,
   Bar,
+  Legend,
 } from "recharts";
 import { linspace } from "../lib/utils";
 import { ReportOutputs } from "@/app/api/route";
@@ -26,6 +25,7 @@ import {
   BatteryCapacityAtTime,
   calculateChargeCost,
   calculateChargeCostAcrossRates,
+  calculateOptimumChargeProfile,
   calculateRemainingCapacity,
 } from "../lib/battery";
 import { Noto_Sans_Cypro_Minoan } from "next/font/google";
@@ -39,6 +39,7 @@ export default function Dashboard({ output }: { output: ReportOutputs }) {
     chargePower,
     efficiency,
     batteryDOD,
+    workingHours,
     dailyEnergyConsumptionPerEV,
     chargeTimePerEV,
     totalFleetEnergyDemand,
@@ -136,6 +137,63 @@ export default function Dashboard({ output }: { output: ReportOutputs }) {
     </ResponsiveContainer>
   );
 
+  // Chart showing SOC (charging schedule)
+  const chargeProfile = calculateOptimumChargeProfile(
+    batteryCapacity,
+    chargePower,
+    dailyMileage,
+    efficiency,
+    workingHours[0],
+    workingHours[1],
+  );
+  const maxTime = Math.max(...chargeProfile.map((obj) => obj.time));
+  const ChargeProfileChart: ReactNode = (
+    <ResponsiveContainer minHeight={150}>
+      <LineChart data={chargeProfile}>
+        <XAxis dataKey="time">
+          <Label value="Hour" position="insideBottom" offset={40} />
+        </XAxis>
+        {/* First Y Axis: Capacity */}
+        <YAxis yAxisId="left">
+          <Label
+            value="Capacity (kWh)"
+            angle={-90}
+            dx={-10}
+            style={{ fontSize: "0.7rem" }}
+          />
+        </YAxis>
+        {/* Second Y Axis: Remaining Mileage */}
+        <YAxis yAxisId="right" orientation="right" domain={[0, "dataMax"]}>
+          <Label
+            value="Remaining Mileage (mi)"
+            angle={-90}
+            dx={15}
+            style={{ fontSize: "0.7rem" }}
+          />
+        </YAxis>
+        {/* Ensure yAxisId matches the YAxis components */}
+        <Line
+          yAxisId="left"
+          type="monotone"
+          dataKey="capacity"
+          stroke="#8884d8"
+        />
+        <Line
+          yAxisId="right"
+          type="monotone"
+          dataKey="mileage"
+          stroke="#82ca9d"
+        />
+        <Tooltip
+          formatter={(value: number, name: string) => {
+            return [`${value.toFixed(0)}`, `${name.toUpperCase()}`];
+          }}
+        />
+        <Legend />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+
   return (
     <div className="container m-auto">
       <h1 className="m-auto mt-20 mb-2 text-center text-4xl">
@@ -185,12 +243,24 @@ export default function Dashboard({ output }: { output: ReportOutputs }) {
           notes={`At a flat, nominal rate of £${nominalRate.toFixed(2)}/kWh, charging costs £${calculateChargeCost(dailyEnergyConsumptionPerEV * numEV, nominalRate).toFixed(2)}/day for the fleet.`}
         ></CardWithChartOnRight>
 
-        {/* Area Chart: Flat vs Reduced Rate */}
+        {/* Bar Chart: Flat vs Reduced Rate */}
         <CardWithChart
           title="Flat vs Economy 7 Rate"
           chart={ReducedChargeCostChart}
           className="col-span-1"
         ></CardWithChart>
+
+        {/* Line Chart: Charging Profile*/}
+        <CardWithChartOnRight
+          title="Charge Profile"
+          chart={ChargeProfileChart}
+          className="col-span-1 lg:col-span-3"
+          // notes={
+          //   maxTime < workingHours[1]
+          //     ? `On average, your EV takes ${(maxTime - workingHours[0]).toFixed(0)} hours to complete the daily mileage.`
+          //     : ""
+          // }
+        />
       </CardGrid>
       <h2>Battery Health</h2>
       <CardGrid>
@@ -202,6 +272,7 @@ export default function Dashboard({ output }: { output: ReportOutputs }) {
           notes={`Assumes a degradation rate of ${(degradationRate * 100).toFixed(1)}% per year. Battery capacity will be reduced to ${remainingBatteryCapacityAcrossTime[years.length - 1].capacity.toFixed(1)} kWh in ${years[years.length - 1].toFixed(1)} years.`}
         />
         <CardKPI
+          className="col-span-1"
           value={Math.round(numDischargeCyclesPerYear)}
           title="Annual No. of Charge/Discharge Cycles"
           notes="Battery gradually degrades as it is cycled. Try keeping it between 20% to 80% to slow degradation"
