@@ -71,7 +71,7 @@ export default function Dashboard({ output }: { output: ReportOutputs }) {
           /> */}
         </YAxis>
         <Tooltip
-          formatter={(value: number, name: string, props) => {
+          formatter={(value: number, name: string) => {
             const formattedValue = value.toFixed(2);
             const formattedName = name.toUpperCase();
             return [`£${formattedValue}`, `${formattedName}`];
@@ -127,7 +127,7 @@ export default function Dashboard({ output }: { output: ReportOutputs }) {
           />
         </YAxis>
         <Tooltip
-          formatter={(value: number, name: string, props) => {
+          formatter={(value: number, name: string) => {
             const formattedValue = value.toFixed(0);
             const formattedName = name.toUpperCase();
             return [`${formattedValue} kWh`, `${formattedName}`];

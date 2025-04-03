@@ -37,7 +37,7 @@ const electricRateOffPeak = electricRate / 2; // Off-peak electricity tariff [£
 const reports: Record<string, ReportOutputs> = {};
 
 export async function POST(req: Request) {
-  let {
+  const {
     numEV,
     dailyMileage,
     batteryCapacity,
