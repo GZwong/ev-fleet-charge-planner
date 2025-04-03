@@ -28,7 +28,6 @@ import {
   calculateOptimumChargeProfile,
   calculateRemainingCapacity,
 } from "../lib/battery";
-import { Noto_Sans_Cypro_Minoan } from "next/font/google";
 
 export default function Dashboard({ output }: { output: ReportOutputs }) {
   // Extract parameters
@@ -91,7 +90,7 @@ export default function Dashboard({ output }: { output: ReportOutputs }) {
         <XAxis></XAxis>
         <YAxis></YAxis>
         <Tooltip
-          formatter={(value: number, name: string, props) => {
+          formatter={(value: number, name: string) => {
             const formattedValue = value.toFixed(2);
             const formattedName = name.toUpperCase();
             return [`£${formattedValue}`, `${formattedName}`];
@@ -104,7 +103,7 @@ export default function Dashboard({ output }: { output: ReportOutputs }) {
   // Chart showing battery degradation
   const degradationRate = 0.035; // 3.5% every year
   const years = linspace(0, 5, 5); // Show battery degradation across years
-  let remainingBatteryCapacityAcrossTime: BatteryCapacityAtTime[] = [];
+  const remainingBatteryCapacityAcrossTime: BatteryCapacityAtTime[] = [];
   years.map((year) => {
     remainingBatteryCapacityAcrossTime.push({
       time: year,
@@ -146,7 +145,6 @@ export default function Dashboard({ output }: { output: ReportOutputs }) {
     workingHours[0],
     workingHours[1],
   );
-  const maxTime = Math.max(...chargeProfile.map((obj) => obj.time));
   const ChargeProfileChart: ReactNode = (
     <ResponsiveContainer minHeight={150}>
       <LineChart data={chargeProfile}>

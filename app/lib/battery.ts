@@ -75,7 +75,7 @@ export function calculateChargeCostAcrossRates(
   maxRate: number,
   numPoints: number = 50,
 ): ChargeCostAtRate[] {
-  let chargeCosts: ChargeCostAtRate[] = [];
+  const chargeCosts: ChargeCostAtRate[] = [];
 
   const electricRates = linspace(minRate, maxRate, numPoints);
   electricRates.map((rate) => {
@@ -130,7 +130,7 @@ export function calculateOptimumChargeProfile(
   startHour: number,
   endHour: number,
   speed: number = 40,
-  SOC_min: number = 0,
+  SOC_min: number = 0, // Enforce minimum SOC
   SOC_max: number = 0.99,
   chargeEfficiency: number = 0.9,
   maxChargePower: number = 0,
@@ -140,21 +140,25 @@ export function calculateOptimumChargeProfile(
   }
 
   let remainingCapacity = batteryCapacity * SOC_max;
+  const minCapacity = batteryCapacity * SOC_min; // Ensure capacity does not go below this
   let remainingMileage = dailyMileage;
   let currentHour = startHour;
-  let chargeProfile = [];
+  const chargeProfile = [];
 
   // Time constant for slow charge above 80%
   const t_p1 = (0.8 * batteryCapacity) / (chargeEfficiency * chargePower);
   const tau = t_p1 / Math.log(2);
 
   while (remainingMileage > 0 && currentHour < endHour) {
-    let energyUsedNextHour = speed / vehicleEfficiency;
+    const energyUsedNextHour = speed / vehicleEfficiency;
     let SOC_current = remainingCapacity / batteryCapacity;
 
-    // Driving phase: Ensure battery does not go negative
-    if (remainingCapacity >= energyUsedNextHour) {
-      remainingCapacity = Math.max(remainingCapacity - energyUsedNextHour, 0);
+    // Driving phase: Ensure battery does not go below SOC_min
+    if (remainingCapacity - energyUsedNextHour >= minCapacity) {
+      remainingCapacity = Math.max(
+        remainingCapacity - energyUsedNextHour,
+        minCapacity,
+      );
       remainingMileage = Math.max(remainingMileage - speed, 0);
     } else {
       // Enter charging phase if not enough charge to drive

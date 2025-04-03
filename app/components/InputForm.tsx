@@ -1,7 +1,6 @@
 "use client";
 
 import { ReactNode, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import ReactRangeSliderInput from "react-range-slider-input";
 import "react-range-slider-input/dist/style.css";
 import { ReportOutputs } from "../api/route";
@@ -104,7 +103,7 @@ function InputForm() {
         setResult(data);
         setResultLoaded(true);
       } catch (error) {
-        console.log("Error has been catched");
+        console.log("Error has been catched: ", error);
       } finally {
         setIsLoading(false);
       }

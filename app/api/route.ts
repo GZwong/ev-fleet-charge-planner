@@ -24,6 +24,7 @@ export type ReportOutputs = {
   // Computed values
   dailyEnergyConsumptionPerEV: number;
   chargeTimePerEV: number;
+  mileagePerCharge: number;
   totalFleetEnergyDemand: number;
   totalChargingCost: number;
   reducedChargingCost: number;
@@ -108,6 +109,7 @@ export async function POST(req: Request) {
     workingHours,
     dailyEnergyConsumptionPerEV,
     chargeTimePerEV,
+    mileagePerCharge,
     totalFleetEnergyDemand,
     totalChargingCost,
     reducedChargingCost,

@@ -1,7 +1,5 @@
-import Image from "next/image";
 import Hero from "./components/Hero";
 import InputPage from "./components/InputPage";
-import Dashboard from "./components/Dashboard";
 
 export default function Home() {
   return (
